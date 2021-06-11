@@ -1,6 +1,6 @@
 using System;
 
-namespace FilmsCatalog.Models
+namespace FilmsCatalog.ViewModels
 {
     public class ErrorViewModel
     {

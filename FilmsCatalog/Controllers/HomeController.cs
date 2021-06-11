@@ -1,4 +1,5 @@
 ﻿using FilmsCatalog.Models;
+using FilmsCatalog.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;

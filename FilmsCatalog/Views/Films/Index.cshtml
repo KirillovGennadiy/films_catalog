@@ -1,0 +1,34 @@
+﻿@model FilmsCatalog.ViewModels.Film.IndexViewModel
+@{
+    ViewData["Title"] = "Коллекция фильмов";
+}
+
+<h2>Фильмы</h2>
+
+@if (!Model.Films.Any())
+{
+    <div>Коллекция пуста:(</div>
+}
+else
+{
+    <table>
+        @foreach (var film in Model.Films)
+        {
+            <tr>
+                <td>@film.Name</td>
+                <td>@film.Description</td>
+                <td>@film.Producer</td>
+            </tr>
+        }
+    </table>
+
+    if (Model.HasPrev)
+    {
+        <span>Prev</span>
+    }
+
+    if (Model.HasNext)
+    {
+        <span>Next</span>
+    }
+}

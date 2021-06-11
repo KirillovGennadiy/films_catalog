@@ -1,5 +1,8 @@
+using AutoMapper;
 using FilmsCatalog.Data;
 using FilmsCatalog.Models;
+using FilmsCatalog.Services.Implementations;
+using FilmsCatalog.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -35,7 +38,12 @@ namespace FilmsCatalog
 
             services.AddDatabaseDeveloperPageExceptionFilter();            
             services.AddControllersWithViews();
-            services.AddRazorPages();
+            services.AddRazorPages(); 
+            services.AddHttpContextAccessor();
+
+            services.AddAutoMapper(typeof(MappingProfile));
+            services.AddScoped<IFilesService, FilesService>();
+            services.AddScoped<IFilmsService, FilmsService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
