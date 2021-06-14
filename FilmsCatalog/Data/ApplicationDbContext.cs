@@ -12,9 +12,17 @@ namespace FilmsCatalog.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
+            Database.EnsureCreated();
         }
 
         public DbSet<Film> Films { get; set; }
         public DbSet<File> Files { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<Film>().HasOne(x => x.Poster).WithMany().HasForeignKey(x => x.PosterId).OnDelete(DeleteBehavior.NoAction);
+
+            base.OnModelCreating(builder);
+        }
     }
 }

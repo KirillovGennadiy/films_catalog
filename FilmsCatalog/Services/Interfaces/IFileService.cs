@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace FilmsCatalog.Services.Interfaces
 {
-    public interface IFilesService
+    public interface IFileService
     {
-        Task Create(IFormFile file, string subFolderName);
-        void Delete(string path);
+        Task<int> Create(IFormFile file, string subFolder);
+        Task Delete(int id);
     }
 }

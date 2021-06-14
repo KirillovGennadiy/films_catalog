@@ -1,0 +1,26 @@
+﻿@model FilmsCatalog.ViewModels.Film.FilmViewModel
+@{
+    ViewData["Title"] = "Информация о фильме";
+
+    bool IsUserFilm = Model.Creator?.UserName == User.Identity.Name;
+}
+
+<div class="card mb-3" style="width: 100%">
+    <div class="row no-gutters">
+        <div class="col-md-4">
+            <img src="@(Model.Poster?.Path ?? Url.Content("/files/no-image.png"))" class="card-img-top" alt="poster">
+        </div>
+        <div class="col-md-8">
+            <div class="card-body">
+                <h5 class="card-title">@Model.Name (@Model.ProductionYear), @Model.Producer</h5>
+                <p class="card-text">@Model.Description</p>
+                <a asp-action="Index" asp-controller="Film" class="btn btn-primary">Вернуться</a>
+                @if (IsUserFilm)
+                {
+                    <a asp-action="Edit" asp-controller="Film" asp-route-id="@Model.Id" class="btn btn-outline-primary" role="button" title="Изменить"><i class="fa fa-pencil"></i></a>
+                    <a asp-action="ConfirmDelete" asp-controller="Film" asp-route-id="@Model.Id" class="btn btn-outline-danger" role="button" title="Удалить"><i class="fa fa-trash"></i></a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

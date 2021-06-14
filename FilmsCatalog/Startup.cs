@@ -42,8 +42,8 @@ namespace FilmsCatalog
             services.AddHttpContextAccessor();
 
             services.AddAutoMapper(typeof(MappingProfile));
-            services.AddScoped<IFilesService, FilesService>();
-            services.AddScoped<IFilmsService, FilmsService>();
+            services.AddScoped<IFileService, FileService>();
+            services.AddScoped<IFilmService, FilmService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

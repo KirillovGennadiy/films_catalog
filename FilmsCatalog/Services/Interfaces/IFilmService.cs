@@ -5,11 +5,13 @@ using System.Threading.Tasks;
 
 namespace FilmsCatalog.Services.Interfaces
 {
-    public interface IFilmsService
+    public interface IFilmService
     {
-        Task<FilmViewModel> GetViewModel(int id);
+        Task<FilmViewModel> GetViewModelAsync(int id);
         Task<Film> CreateAsync(FilmViewModel model);
         Task<Film> UpdateAsync(FilmViewModel model);
-        Task<IndexViewModel> GetGrigAsync(int pageSize, int page);
+        Task DeleteAsync(int id);
+        Task<IndexViewModel> GetGrigAsync(int? page);
+        Task<bool> IsUserCreatorAsync(int id, string userName);
     }
 }

@@ -1,4 +1,7 @@
-﻿// Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification
-// for details on configuring this project to bundle and minify static web assets.
-
-// Write your JavaScript code.
+﻿$(function () {
+    $('[data-type=clickable-row]').on('click', ({ target }) => {
+        let tr = $(target).closest('tr');
+        let url = tr.data('href');
+        window.location = url;
+    })
+})
