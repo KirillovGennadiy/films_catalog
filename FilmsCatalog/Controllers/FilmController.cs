@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FilmsCatalog.Controllers
@@ -11,13 +12,16 @@ namespace FilmsCatalog.Controllers
     public class FilmController : Controller
     {
         private readonly IFilmService _filmsService;
+        private readonly IFileService _fileService;
         private readonly ILogger<FilmController> _logger;
         public FilmController(
             IFilmService filmsService,
+            IFileService fileService,
             ILogger<FilmController> logger
             )
         {
             _filmsService = filmsService;
+            _fileService = fileService;
             _logger = logger;
         }
 
@@ -40,20 +44,45 @@ namespace FilmsCatalog.Controllers
         [HttpGet]
         public async Task<IActionResult> Info(int id)
         {
-            return View(await _filmsService.GetViewModelAsync(id));
+            try 
+            { 
+                var model = await _filmsService.GetViewModelAsync(User, id, isInfoPage: true);
+                return View(model);
+            }
+            catch(Exception e)
+            {
+                return View("Error", e.Message);
+            }
         }
 
         [Authorize]
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> CreateOrUpdate(int? id = null)
         {
-            return View(new FilmViewModel());
+            try
+            {
+                return View(await _filmsService.GetViewModelAsync(User, id));
+            }
+            catch (Exception e)
+            {
+                return View("Error", e.Message);
+            }
         }
+
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(FilmViewModel model)
+        public async Task<IActionResult> CreateOrUpdate(FilmViewModel model)
         {
+            if (model.FormPoster != null)
+            {
+                var errors = _fileService.CheckFile(model.FormPoster);
+                if (errors.Any())
+                {
+                    ModelState.AddModelError("FormPoster", string.Join("<br />", errors));
+                }
+            }
+
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -61,49 +90,12 @@ namespace FilmsCatalog.Controllers
 
             try
             {
-                await _filmsService.CreateAsync(model);
+                await _filmsService.CreateOrUpdateAsync(model, User);
                 return RedirectToAction("Index");
             }
-            catch
+            catch (Exception e)
             {
-                ModelState.AddModelError(string.Empty, "An error occured while creating the film");
-                return View(model);
-            }
-
-        }
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> Edit(int id)
-        {
-            if (!await _filmsService.IsUserCreatorAsync(id, User.Identity.Name)) 
-            {
-                return RedirectToAction("Index");
-            }
-
-            return View(await _filmsService.GetViewModelAsync(id));
-        }
-
-
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(FilmViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            try
-            {
-                await _filmsService.UpdateAsync(model);
-                return RedirectToAction("Index");
-            }
-            catch
-            {
-                ModelState.AddModelError(string.Empty, "An error occured while editing the film");
-                return View(model);
+                return View("Error", e.Message);
             }
 
         }
@@ -114,17 +106,11 @@ namespace FilmsCatalog.Controllers
         {
             try
             {
-                if (!await _filmsService.IsUserCreatorAsync(id, User.Identity.Name))
-                {
-                    return RedirectToAction("Index");
-                }
-
-                return View(await _filmsService.GetViewModelAsync(id));
+                return View(await _filmsService.GetViewModelAsync(User, id));
             }
-            catch
+            catch (Exception e)
             {
-                ModelState.AddModelError(string.Empty, "An error occured while editing the film");
-                return RedirectToAction("Index");
+                return RedirectToAction("Error", e.Message);
             }
         }
 
@@ -134,13 +120,12 @@ namespace FilmsCatalog.Controllers
         {
             try
             {
-                await _filmsService.DeleteAsync(id);
+                await _filmsService.DeleteAsync(id, User);
                 return RedirectToAction("Index");
             }
-            catch(Exception err)
+            catch(Exception e)
             {
-                ModelState.AddModelError(string.Empty, "An error occured while editing the film");
-                return View("ConfirmDelete", await _filmsService.GetViewModelAsync(id));
+                return View("Error", e.Message);
             }
         }
     }

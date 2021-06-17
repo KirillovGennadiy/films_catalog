@@ -3,7 +3,10 @@ using FilmsCatalog.Services.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FilmsCatalog.Services.Implementations
@@ -12,15 +15,37 @@ namespace FilmsCatalog.Services.Implementations
     {
         private readonly IWebHostEnvironment _appEnvironment;
         private readonly ApplicationDbContext _dbContext;
+        private readonly IConfiguration _configuration;
+        private readonly long _fileSizeLimit;
+        private readonly string[] _acceptableFormats;
         public FileService(
             IWebHostEnvironment appEnvironment,
-            ApplicationDbContext dbContext
+            ApplicationDbContext dbContext,
+            IConfiguration configuration
             )
         {
             _appEnvironment = appEnvironment;
             _dbContext = dbContext;
+            _configuration = configuration;
+            _fileSizeLimit = _configuration.GetValue<long>("FileSizeLimit");
+            _acceptableFormats = _configuration.GetValue<string>("AcceptableFormats")?.Split("|");
         }
 
+        public List<string> CheckFile(IFormFile file)
+        {
+            var errors = new List<string>();
+            if (file.Length > _fileSizeLimit)
+            {
+                errors.Add($"Размер фала не должен превышать {_fileSizeLimit / (1024 *1024)}МБ");
+            }
+
+            if (_acceptableFormats != null && !_acceptableFormats.Contains(file.ContentType))
+            {
+                errors.Add($"Можно использовать следующие типы: {string.Join(",", _acceptableFormats)}");
+            }
+
+            return errors;
+        }
 
         public async Task<int> Create(IFormFile file, string subFolder)
         {

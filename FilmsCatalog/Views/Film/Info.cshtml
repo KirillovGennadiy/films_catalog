@@ -17,7 +17,7 @@
                 <a asp-action="Index" asp-controller="Film" class="btn btn-primary">Вернуться</a>
                 @if (IsUserFilm)
                 {
-                    <a asp-action="Edit" asp-controller="Film" asp-route-id="@Model.Id" class="btn btn-outline-primary" role="button" title="Изменить"><i class="fa fa-pencil"></i></a>
+                    <a asp-action="CreateOrUpdate" asp-controller="Film" asp-route-id="@Model.Id" class="btn btn-outline-primary" role="button" title="Изменить"><i class="fa fa-pencil"></i></a>
                     <a asp-action="ConfirmDelete" asp-controller="Film" asp-route-id="@Model.Id" class="btn btn-outline-danger" role="button" title="Удалить"><i class="fa fa-trash"></i></a>
                 }
             </div>

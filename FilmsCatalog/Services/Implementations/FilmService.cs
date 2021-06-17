@@ -10,7 +10,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Principal;
 using System.Threading.Tasks;
+using X.PagedList;
 
 namespace FilmsCatalog.Services.Implementations
 {
@@ -18,73 +20,86 @@ namespace FilmsCatalog.Services.Implementations
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly IMapper _mapper;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly UserManager<User> _userManager;
         private readonly IFileService _filesService;
 
         public FilmService(
             ApplicationDbContext dbContext,
-            IHttpContextAccessor httpContextAccessor,
             UserManager<User> userManager,
             IMapper mapper,
             IFileService filesService)
         {
             _dbContext = dbContext;
-            _httpContextAccessor = httpContextAccessor;
             _filesService = filesService;
             _mapper = mapper;
             _userManager = userManager;
         }
 
-        public async Task<FilmViewModel> GetViewModelAsync(int id)
+        public async Task<FilmViewModel> GetViewModelAsync(IPrincipal principal, int? id = null, bool isInfoPage = false)
         {
-            var entity = await _dbContext.Films.Include(x => x.Poster).Include(x => x.Creator).FirstOrDefaultAsync(x => x.Id == id);
+            if (!id.HasValue)
+            {
+                return new FilmViewModel();
+            }
+
+            var entity = 
+                await _dbContext.Films
+                                .AsNoTracking()
+                                .Include(x => x.Poster)
+                                .Include(x => x.Creator)
+                                .Where(x => isInfoPage || x.Creator.UserName == principal.Identity.Name)
+                                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null)
+            {
+                throw new Exception("Фильм не найден");
+            }
+
             return _mapper.Map<FilmViewModel>(entity);
         }
 
-        public async Task<bool> IsUserCreatorAsync(int id, string userName)
+        public async Task<Film> CreateOrUpdateAsync(FilmViewModel model, IPrincipal principal)
         {
-            var film = await _dbContext.Films.AsNoTracking().Include(x => x.Creator).FirstOrDefaultAsync(x => x.Id == id);
-
-            return film.Creator.UserName == userName;
-        }
-
-        public async Task<Film> CreateAsync(FilmViewModel model)
-        {
-            var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-            model.CreatorId = user.Id;
-            model.PosterId = await _filesService.Create(model.FormPoster, model.Name + "_" + model.ProductionYear);
-
-            var entityResult = await _dbContext.Films.AddAsync(_mapper.Map<Film>(model));
-            await _dbContext.SaveChangesAsync();
-
-            return entityResult.Entity;
-        }
-
-        public async Task<Film> UpdateAsync(FilmViewModel model)
-        {
-            var entity = await _dbContext.Films.AsNoTracking().FirstOrDefaultAsync(x => x.Id == model.Id);
+            var oldPosterId = await _dbContext.Films.AsNoTracking().Where(x => x.Id == model.Id).Select(x => x.PosterId).FirstOrDefaultAsync();
+            
             if (model.FormPoster != null)
             {
-                model.PosterId = await _filesService.Create(model.FormPoster, model.Name + "_" + model.ProductionYear);
+                model.PosterId = await _filesService.Create(model.FormPoster, model.ProductionYear);
             }
 
-            model.CreatorId = entity.CreatorId;
+            if (model.Id == 0)
+            {
+                var user = await _userManager.GetUserAsync((ClaimsPrincipal)principal);
+                model.CreatorId = user.Id;
+            }
 
-            var entityResult = _dbContext.Films.Update(_mapper.Map<Film>(model));
+            var entityResult = 
+                    model.Id > 0 ? 
+                    _dbContext.Films.Update(_mapper.Map<Film>(model)) : 
+                    await _dbContext.Films.AddAsync(_mapper.Map<Film>(model));
+
             await _dbContext.SaveChangesAsync();
 
-            if (model.FormPoster != null && entity.PosterId.HasValue)
+            if (model.FormPoster != null && oldPosterId.HasValue)
             {
-                await _filesService.Delete(entity.PosterId.Value);
+                await _filesService.Delete(oldPosterId.Value);
             }
 
             return entityResult.Entity;
         }
-        
-        public async Task DeleteAsync(int id)
+
+        public async Task DeleteAsync(int id, IPrincipal principal)
         {
-            var entity = await _dbContext.Films.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            var entity = await _dbContext.Films
+                                        .AsNoTracking()
+                                        .Include(x => x.Creator)
+                                        .Where(x => x.Creator.UserName == principal.Identity.Name)
+                                        .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null)
+            {
+                throw new Exception("Фильм не найден");
+            }
 
             var entityResult = _dbContext.Films.Remove(entity);
             await _dbContext.SaveChangesAsync();
@@ -95,27 +110,14 @@ namespace FilmsCatalog.Services.Implementations
             }
         }
 
-        public async Task<IndexViewModel> GetGrigAsync(int? page)
+        public async Task<IPagedList<Film>> GetGrigAsync(int? page)
         {
-            if (!await _dbContext.Films.AnyAsync())
-            {
-                return new IndexViewModel();
-            }
-
-            var model = new IndexViewModel
-            {
-                CurrentPage = page ?? 0,
-                Total = await _dbContext.Films.CountAsync()
-            };
-
-            model.Films = 
+            var model =
                 await _dbContext.Films
                 .AsNoTracking()
                 .Include(x => x.Poster)
                 .Include(x => x.Creator)
-                .Skip(model.PageSize * model.CurrentPage)
-                .Take(model.PageSize)
-                .ToListAsync();
+                .ToPagedListAsync(page ?? 1, 5);
 
             return model;
         }

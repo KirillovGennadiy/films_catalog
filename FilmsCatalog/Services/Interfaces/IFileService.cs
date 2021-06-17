@@ -8,6 +8,7 @@ namespace FilmsCatalog.Services.Interfaces
 {
     public interface IFileService
     {
+        List<string> CheckFile(IFormFile file);
         Task<int> Create(IFormFile file, string subFolder);
         Task Delete(int id);
     }

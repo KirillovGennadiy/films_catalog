@@ -3,9 +3,13 @@
     ViewData["Title"] = "Добавить фильм";
 }
 
-<h2>Добавить фильм</h2>
+<h2>@(Model.Id > 0 ? "Изменить фильм" : "Добавить фильм")</h2>
 
-<form asp-controller="Film" asp-action="Create" method="post" enctype="multipart/form-data">
+<form asp-controller="Film" asp-action="CreateOrUpdate" method="post" enctype="multipart/form-data">
+    @Html.HiddenFor(m => m.Id)
+    @Html.HiddenFor(m => m.CreatorId)
+    @Html.HiddenFor(m => m.PosterId)
+    @Html.AntiForgeryToken()
     <div class="form-row">
         <div class="form-group col-md-4 col-sm-6 col-12">
             <label asp-for="Name"></label>
@@ -41,9 +45,14 @@
             <span asp-validation-for="FormPoster" class="text-danger"></span>
         </div>
     </div>
+    <div class="form-row">
+        <div class="form-group col-md-4 col-sm-6 col-12">
+            <img style="width: 100%;" src="@(Model.Poster?.Path ?? Url.Content("/files/no-image.png"))" />
+        </div>
+    </div>
     <div class="form-group">
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        <button type="submit" class="btn btn-primary">Создать</button>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
 
         <a asp-action="Index" asp-controller="Film" class="btn btn-outline-primary">Отмена</a>
     </div>
